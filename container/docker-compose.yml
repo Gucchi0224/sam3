@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  sam3:
+    build:
+      context: ..
+      dockerfile: container/Dockerfile
+    image: sam3:latest
+    container_name: sam3-dev
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - TORCH_HOME=/workspace/models
+      - HF_HOME=/workspace/models/huggingface
+    volumes:
+      # Mount the parent directory (sam3 root) to /workspace/sam3
+      - ..:/workspace/sam3
+      # Persistent volume for model weights
+      - sam3_models:/workspace/models
+      # Persistent volume for data
+      - sam3_data:/workspace/data
+      # Optional: Mount your huggingface cache if you have one
+      # - ~/.cache/huggingface:/workspace/models/huggingface
+    ports:
+      - "8888:8888"  # Jupyter notebook
+      - "6006:6006"  # TensorBoard (if needed)
+    shm_size: '8gb'  # Shared memory for PyTorch DataLoader
+    stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  sam3_models:
+    driver: local
+  sam3_data:
+    driver: local
